@@ -77,6 +77,132 @@ function ema(values, days) {
   }, values[0] || 0);
 }
 
+function twseMonthList(monthCount = 7) {
+  const now = new Date();
+  const months = [];
+  for (let index = 0; index < monthCount; index += 1) {
+    const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    months.push(`${year}${month}01`);
+  }
+  return months;
+}
+
+function tpexMonthList(monthCount = 7) {
+  const now = new Date();
+  const months = [];
+  for (let index = 0; index < monthCount; index += 1) {
+    const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    months.push(`${year}/${month}/01`);
+  }
+  return months;
+}
+
+function parseOfficialNumber(value) {
+  const clean = String(value || "").replace(/,/g, "").replace(/X/g, "").trim();
+  const parsed = Number(clean);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseRocDate(rocDate) {
+  const [rocYear, month, day] = String(rocDate || "").split("/").map(Number);
+  if (!rocYear || !month || !day) return null;
+  return `${rocYear + 1911}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function parseListedName(title, symbol) {
+  const match = String(title || "").match(new RegExp(`${symbol}\\s+([^\\s]+)`));
+  return match?.[1]?.trim() || symbol;
+}
+
+async function fetchOfficialJson(url) {
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) throw new Error(`官方資料讀取失敗 (${response.status})`);
+  return response.json();
+}
+
+function buildTwseQuote(symbol, payloads) {
+  const okPayloads = payloads.filter((payload) => payload.stat === "OK" && Array.isArray(payload.data));
+  const rows = okPayloads.flatMap((payload) => payload.data);
+  const prices = rows
+    .map((row) => ({
+      date: parseRocDate(row[0]),
+      volume: parseOfficialNumber(row[1]),
+      open: parseOfficialNumber(row[3]),
+      high: parseOfficialNumber(row[4]),
+      low: parseOfficialNumber(row[5]),
+      close: parseOfficialNumber(row[6])
+    }))
+    .filter((item) => item.date && Number.isFinite(item.close))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  if (!prices.length) return null;
+
+  const latest = prices.at(-1);
+  const title = okPayloads.find((payload) => payload.title)?.title || "";
+  return {
+    symbol,
+    source: "TWSE_STOCK_DAY",
+    name: parseListedName(title, symbol),
+    currency: "TWD",
+    exchangeName: "TWSE",
+    regularMarketPrice: latest.close,
+    regularMarketTime: `${latest.date}T13:30:00+08:00`,
+    dataDate: latest.date,
+    prices
+  };
+}
+
+function buildTpexQuote(symbol, payloads) {
+  const rows = payloads.flatMap((payload) => payload.tables?.[0]?.data || []);
+  const prices = rows
+    .map((row) => ({
+      date: parseRocDate(row[0]),
+      volume: parseOfficialNumber(row[1]) ? parseOfficialNumber(row[1]) * 1000 : null,
+      open: parseOfficialNumber(row[3]),
+      high: parseOfficialNumber(row[4]),
+      low: parseOfficialNumber(row[5]),
+      close: parseOfficialNumber(row[6])
+    }))
+    .filter((item) => item.date && Number.isFinite(item.close))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  if (!prices.length) return null;
+
+  const latest = prices.at(-1);
+  const subtitle = payloads.find((payload) => payload.tables?.[0]?.subtitle)?.tables?.[0]?.subtitle || "";
+  return {
+    symbol,
+    source: "TPEX_TRADING_STOCK",
+    name: parseListedName(subtitle, symbol),
+    currency: "TWD",
+    exchangeName: "TPEx",
+    regularMarketPrice: latest.close,
+    regularMarketTime: `${latest.date}T13:30:00+08:00`,
+    dataDate: latest.date,
+    prices
+  };
+}
+
+async function fetchOfficialQuote(cleanSymbol) {
+  const twsePayloads = await Promise.all(twseMonthList().map((date) => (
+    fetchOfficialJson(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${date}&stockNo=${cleanSymbol}`)
+  )));
+  const twseQuote = buildTwseQuote(cleanSymbol, twsePayloads);
+  if (twseQuote) return twseQuote;
+
+  const tpexPayloads = await Promise.all(tpexMonthList().map((date) => (
+    fetchOfficialJson(`https://www.tpex.org.tw/www/zh-tw/afterTrading/tradingStock?code=${cleanSymbol}&date=${date}&response=json`)
+  )));
+  const tpexQuote = buildTpexQuote(cleanSymbol, tpexPayloads);
+  if (tpexQuote) return tpexQuote;
+
+  throw new Error("TWSE/TPEx 查無日成交資料");
+}
+
 async function fetchQuote(symbol) {
   const cleanSymbol = String(symbol).replace(/\D/g, "").slice(0, 6) || "2327";
   const isLocalServer = ["localhost", "127.0.0.1"].includes(window.location.hostname);
@@ -101,8 +227,14 @@ async function fetchQuote(symbol) {
     }
   }
 
+  try {
+    return await fetchOfficialQuote(cleanSymbol);
+  } catch (error) {
+    errors.push(error.message);
+  }
+
   if (!isLocalServer) {
-    throw new Error(`GitHub 靜態版尚未產生 ${cleanSymbol} 的資料檔，請先把這檔加入資料清單並重新部署。`);
+    throw new Error(`無法取得 ${cleanSymbol} 資料。靜態檔不存在，且瀏覽器直接讀官方 API 失敗：${errors.at(-1)}`);
   }
 
   throw new Error(errors.at(-1) || "行情資料讀取失敗");
