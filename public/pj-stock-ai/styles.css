@@ -333,10 +333,12 @@ h2 {
   border: 1px solid rgba(103, 212, 255, 0.35);
   border-radius: var(--radius);
   background: rgba(13, 18, 27, 0.74);
+  overflow: visible;
 }
 
 .google-ai-head {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 10px;
@@ -418,6 +420,15 @@ h2 {
   padding: 10px;
   border-radius: 6px;
   background: #0e1117;
+  max-height: none;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.google-ai-result p + p {
+  margin-top: 8px;
 }
 
 .google-ai-result strong {
@@ -613,6 +624,11 @@ canvas {
   .position-form,
   .gemini-key-row {
     grid-template-columns: 1fr;
+  }
+
+  .google-ai-head {
+    flex-direction: column;
+    gap: 6px;
   }
 
   .input-row {
