@@ -420,11 +420,29 @@ h2 {
   padding: 10px;
   border-radius: 6px;
   background: #0e1117;
-  max-height: none;
-  overflow: visible;
+  max-height: min(420px, 48vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--cyan) #11161d;
+  scrollbar-width: thin;
   overflow-wrap: anywhere;
   white-space: normal;
   word-break: break-word;
+}
+
+.google-ai-result::-webkit-scrollbar {
+  width: 8px;
+}
+
+.google-ai-result::-webkit-scrollbar-track {
+  background: #11161d;
+  border-radius: 999px;
+}
+
+.google-ai-result::-webkit-scrollbar-thumb {
+  background: rgba(103, 212, 255, 0.7);
+  border-radius: 999px;
 }
 
 .google-ai-result p + p {
