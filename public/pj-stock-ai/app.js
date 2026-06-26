@@ -59,6 +59,60 @@ function formatPercent(value) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
+function getPriceZone(prices, livePrice) {
+  const rangePrices = (prices || [])
+    .slice(-120)
+    .filter((item) => (
+      Number.isFinite(item.high)
+      && Number.isFinite(item.low)
+      && Number.isFinite(item.close)
+    ));
+
+  if (rangePrices.length < 20 || !Number.isFinite(livePrice)) {
+    return {
+      label: "資料不足",
+      percent: NaN,
+      low: NaN,
+      high: NaN,
+      note: "行情天數不足，暫不判斷高低檔。"
+    };
+  }
+
+  const rangeHigh = Math.max(...rangePrices.map((item) => item.high));
+  const rangeLow = Math.min(...rangePrices.map((item) => item.low));
+  const percent = rangeHigh === rangeLow
+    ? 50
+    : clamp(((livePrice - rangeLow) / (rangeHigh - rangeLow)) * 100, 0, 100);
+
+  if (percent >= 75) {
+    return {
+      label: "高檔",
+      percent,
+      low: rangeLow,
+      high: rangeHigh,
+      note: "接近近期區間上緣，追價要保守，優先看突破是否有量。"
+    };
+  }
+
+  if (percent <= 35) {
+    return {
+      label: "低檔",
+      percent,
+      low: rangeLow,
+      high: rangeHigh,
+      note: "接近近期區間下緣，適合觀察止跌，但要防守破底風險。"
+    };
+  }
+
+  return {
+    label: "中位",
+    percent,
+    low: rangeLow,
+    high: rangeHigh,
+    note: "位在近期區間中段，等方向表態比預設多空更重要。"
+  };
+}
+
 function escapeHTML(value) {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -347,6 +401,7 @@ function analyze(quote) {
   const avgVolume20 = movingAverage(volumes, 20);
   const volumeUp = Number.isFinite(avgVolume5) && Number.isFinite(avgVolume20) && avgVolume5 > avgVolume20;
   const trendUp = livePrice > previous;
+  const priceZone = getPriceZone(comparablePrices.length >= 20 ? comparablePrices : prices, livePrice);
   const maBull = ma5 > ma10 && ma10 > ma20 && ma20 > ma60;
   const maImproving = ma5 > ma20;
   const trendScore = trendUp ? 18 : 8;
@@ -393,6 +448,7 @@ function analyze(quote) {
     kdK,
     kdD,
     macdRed,
+    priceZone,
     breakout,
     pullback,
     stop,
@@ -402,12 +458,13 @@ function analyze(quote) {
       ["均線", maText, maScore * 5],
       ["頭頭高", higherHigh ? "是" : "否", higherHigh ? 92 : 52],
       ["底底高", higherLow ? "是" : "否", higherLow ? 90 : 50],
+      ["高低檔", priceZone.label, Number.isFinite(priceZone.percent) ? priceZone.percent : NaN],
       ["KD", `${Math.round(kdK)} / ${Math.round(kdD)}`, kdScore * 6],
       ["MACD", macdRed ? "翻紅" : "整理", macdScore * 8],
       ["量能", volumeUp ? "量增" : "普通", volumeScore * 8],
       ["糾結度", Number.isFinite(ma20) ? `${Math.abs((ma5 - ma20) / ma20 * 100).toFixed(2)}%` : "--", maScore * 5]
     ],
-    aiText: `${name}最新資料時間為 ${dataLabel}，價格 ${formatPrice(livePrice)}。目前${trendText === "多頭" ? "偏多" : "仍在震盪"}，均線狀態為${maText}，KD ${Math.round(kdK)} / ${Math.round(kdD)}，MACD ${macdRed ? "翻紅" : "尚未明確翻紅"}。${actionText}停損先看 ${formatPrice(stop)}，第一目標看 ${formatPrice(target)}。`
+    aiText: `${name}最新資料時間為 ${dataLabel}，價格 ${formatPrice(livePrice)}。目前${trendText === "多頭" ? "偏多" : "仍在震盪"}，股價位置屬於${priceZone.label}${Number.isFinite(priceZone.percent) ? `（區間 ${priceZone.percent.toFixed(0)}%）` : ""}，${priceZone.note} 均線狀態為${maText}，KD ${Math.round(kdK)} / ${Math.round(kdD)}，MACD ${macdRed ? "翻紅" : "尚未明確翻紅"}。${actionText}停損先看 ${formatPrice(stop)}，第一目標看 ${formatPrice(target)}。`
   };
 }
 
@@ -484,7 +541,7 @@ function renderAnalysis(analysis) {
   document.querySelector("#scoreValue").textContent = analysis.score;
   document.querySelector("#scoreStars").textContent = stars(analysis.score);
   document.querySelector("#verdictBadge").textContent = analysis.verdict;
-  document.querySelector("#verdictText").textContent = analysis.score >= 88 ? "多方條件集中，留意突破與回測買點。" : analysis.score >= 74 ? "條件接近成形，等待量價確認。" : "勝率不足，先等結構轉強。";
+  document.querySelector("#verdictText").textContent = `${analysis.priceZone.label} · ${analysis.score >= 88 ? "多方條件集中，留意突破與回測買點。" : analysis.score >= 74 ? "條件接近成形，等待量價確認。" : "勝率不足，先等結構轉強。"}`;
   document.querySelector("#chartTitle").textContent = `${analysis.name} ${analysis.symbol}`;
   document.querySelector("#chartMeta").textContent = `${analysis.exchangeName} 官方 · 收盤 ${formatPrice(analysis.last)} · ${analysis.dataLabel}`;
   document.querySelector("#breakoutBuy").textContent = formatPrice(analysis.breakout);
@@ -577,7 +634,7 @@ function buildTomorrowStrategy(analysis, buyDate, buyPrice) {
     action,
     html: `
       <p><strong>${analysis.name} ${analysis.symbol}</strong>，買進價 ${formatPrice(buyPrice)}，目前收盤 ${formatPrice(analysis.last)}，損益 ${formatPercent(profitPercent)}。</p>
-      <p>${buyDayText}。${nextTradingText} 策略：<strong>${action}</strong>。${tone}</p>
+      <p>${buyDayText}。目前屬於<strong>${analysis.priceZone.label}</strong>，${analysis.priceZone.note} ${nextTradingText} 策略：<strong>${action}</strong>。${tone}</p>
       <p>關鍵價位：壓力 ${formatPrice(analysis.breakout)}，回測 ${formatPrice(analysis.pullback)}，防守 ${formatPrice(analysis.stop)}。目前離防守價 ${formatPercent(riskPercent)}，離突破價 ${formatPercent(resistancePercent)}。</p>
     `
   };
@@ -653,6 +710,8 @@ function buildGoogleAiPrompt(analysis, buyDate, buyPrice) {
 目前價格：${formatPrice(analysis.last)}
 PJ Score：${analysis.score}
 系統判斷：${analysis.verdict}
+股價位置：${analysis.priceZone.label}${Number.isFinite(analysis.priceZone.percent) ? `，位於近 120 日區間約 ${analysis.priceZone.percent.toFixed(0)}%` : ""}
+高低檔提醒：${analysis.priceZone.note}
 趨勢：${analysis.trendText}
 均線：${analysis.maText}
 KD：${Math.round(analysis.kdK)} / ${Math.round(analysis.kdD)}
