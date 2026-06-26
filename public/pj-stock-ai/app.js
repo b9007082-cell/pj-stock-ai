@@ -36,6 +36,10 @@ const clearGeminiKeyBtn = document.querySelector("#clearGeminiKeyBtn");
 const googleAiBtn = document.querySelector("#googleAiBtn");
 const googleAiStatus = document.querySelector("#googleAiStatus");
 const googleAiResult = document.querySelector("#googleAiResult");
+const taiwanMarketInput = document.querySelector("#taiwanMarketInput");
+const usTechInput = document.querySelector("#usTechInput");
+const soxInput = document.querySelector("#soxInput");
+const koreaMarketInput = document.querySelector("#koreaMarketInput");
 const canvas = document.querySelector("#priceChart");
 const ctx = canvas.getContext("2d");
 
@@ -667,6 +671,28 @@ function getGeminiKey() {
   return (geminiKeyInput?.value || localStorage.getItem(geminiKeyStorageKey) || "").trim();
 }
 
+function getMarketContext() {
+  const taiwanMarket = taiwanMarketInput?.value || "未輸入";
+  const usTech = usTechInput?.value || "未輸入";
+  const sox = soxInput?.value || "未輸入";
+  const koreaMarket = koreaMarketInput?.value || "未輸入";
+  const values = [taiwanMarket, usTech, sox, koreaMarket];
+  const hasContext = values.some((value) => value !== "未輸入");
+  const summary = `台股大盤：${taiwanMarket}；美股科技：${usTech}；費半：${sox}；韓股：${koreaMarket}`;
+
+  return {
+    taiwanMarket,
+    usTech,
+    sox,
+    koreaMarket,
+    hasContext,
+    summary,
+    note: hasContext
+      ? "請把市場背景當成風險權重：大盤與國際科技股偏多時可略積極；偏空時降低追價與加碼。"
+      : "使用者未輸入市場背景，請不要自行假設大盤、美股、韓股方向。"
+  };
+}
+
 function updateGoogleAiStatus(message) {
   if (!googleAiStatus || !googleAiResult) return;
   const hasKey = Boolean(getGeminiKey());
@@ -699,6 +725,7 @@ function buildGoogleAiPrompt(analysis, buyDate, buyPrice, compact = false) {
   const builtInStrategy = Number.isFinite(buyPrice) && buyPrice > 0 && buyDate
     ? buildTomorrowStrategy(analysis, buyDate, buyPrice).action
     : "尚未輸入持股成本";
+  const marketContext = getMarketContext();
 
   if (compact) {
     return `
@@ -717,6 +744,7 @@ function buildGoogleAiPrompt(analysis, buyDate, buyPrice, compact = false) {
 買進價：${Number.isFinite(buyPrice) && buyPrice > 0 ? formatPrice(buyPrice) : "未輸入"}
 損益：${Number.isFinite(profitPercent) ? formatPercent(profitPercent) : "未輸入"}
 內建策略：${builtInStrategy}
+市場背景：${marketContext.summary}
 
 格式：
 1. 開盤前：
@@ -750,12 +778,14 @@ MACD：${analysis.macdRed ? "翻紅" : "整理"}
 買進價：${Number.isFinite(buyPrice) && buyPrice > 0 ? formatPrice(buyPrice) : "未輸入"}
 目前損益：${Number.isFinite(profitPercent) ? formatPercent(profitPercent) : "未輸入"}
 內建策略：${builtInStrategy}
+市場背景：${marketContext.summary}
+市場背景用法：${marketContext.note}
 
 請輸出：
-1. 下一交易日開盤前策略
-2. 盤中觀察價位
-3. 停損或減碼條件
-4. 若轉強，怎麼加碼或續抱
+1. 大盤與國際股市背景判斷
+2. 下一交易日開盤前策略
+3. 盤中觀察價位
+4. 停損、減碼或加碼條件
 5. 一句最重要提醒
 
 每點最多 80 字，務必完整寫完 1 到 5 點；回答要務實、保守、有條件式。`.trim();
