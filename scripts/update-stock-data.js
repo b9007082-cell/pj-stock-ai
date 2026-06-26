@@ -1,7 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 
-const seedSymbols = ['6173', '3530', '2327', '2330', '3236', '2375', '6104', '4973', '8043'];
+const seedSymbols = ['6173', '3530', '2327', '2330', '3236', '2375', '6104', '4973', '8043', '8111'];
 const outputDir = path.join(__dirname, '..', 'public', 'pj-stock-ai', 'data', 'stocks');
 const includeAllTpex = process.env.PJ_STOCK_ALL_TPEX === '1';
 const includeAllTwse = process.env.PJ_STOCK_ALL_TWSE === '1';
