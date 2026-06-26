@@ -11,7 +11,7 @@ const stockNames = {
 const scannerSymbols = ["6173", "3530", "2327", "3236", "2375", "6104", "4973"];
 const storageKey = "pj-stock-ai-watchlist";
 const geminiKeyStorageKey = "pj-stock-ai-gemini-key";
-const dataVersion = "d8010c9";
+const dataVersion = "895d23c";
 
 let currentAnalysis = null;
 let deferredInstallPrompt = null;
