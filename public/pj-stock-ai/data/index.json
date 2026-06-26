@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-26T13:08:16.748Z",
+  "generatedAt": "2026-06-26T13:28:44.757Z",
   "stocks": [
     {
       "symbol": "6173",
@@ -64,6 +64,14 @@
       "exchangeName": "TPEx",
       "dataDate": "2026-06-26",
       "regularMarketPrice": 180
+    },
+    {
+      "symbol": "8043",
+      "name": "蜜望實",
+      "source": "TPEX_TRADING_STOCK",
+      "exchangeName": "TPEx",
+      "dataDate": "2026-06-26",
+      "regularMarketPrice": 184.5
     }
   ]
 }
