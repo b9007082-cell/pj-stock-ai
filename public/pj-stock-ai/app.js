@@ -692,13 +692,39 @@ function clearGeminiKey() {
   renderPlainText(googleAiResult, "已清除這台瀏覽器中的 Gemini API Key。");
 }
 
-function buildGoogleAiPrompt(analysis, buyDate, buyPrice) {
+function buildGoogleAiPrompt(analysis, buyDate, buyPrice, compact = false) {
   const profitPercent = Number.isFinite(buyPrice) && buyPrice > 0
     ? ((analysis.last - buyPrice) / buyPrice) * 100
     : null;
   const builtInStrategy = Number.isFinite(buyPrice) && buyPrice > 0 && buyDate
     ? buildTomorrowStrategy(analysis, buyDate, buyPrice).action
     : "尚未輸入持股成本";
+
+  if (compact) {
+    return `
+請用繁體中文，根據資料輸出完整 5 點短線策略。每點一行，每點最多 45 字，不要前言。
+
+股票：${analysis.name} ${analysis.symbol}
+下一交易日：${analysis.nextTradingDate}
+現價：${formatPrice(analysis.last)}
+分數：${analysis.score}，判斷：${analysis.verdict}
+位置：${analysis.priceZone.label}
+趨勢：${analysis.trendText}，均線：${analysis.maText}
+壓力：${formatPrice(analysis.breakout)}
+回測：${formatPrice(analysis.pullback)}
+防守：${formatPrice(analysis.stop)}
+買進日：${buyDate || "未輸入"}
+買進價：${Number.isFinite(buyPrice) && buyPrice > 0 ? formatPrice(buyPrice) : "未輸入"}
+損益：${Number.isFinite(profitPercent) ? formatPercent(profitPercent) : "未輸入"}
+內建策略：${builtInStrategy}
+
+格式：
+1. 開盤前：
+2. 盤中：
+3. 停損：
+4. 轉強：
+5. 提醒：`.trim();
+  }
 
   return `
 你是台股短線策略助理，請用繁體中文回答。請只根據以下資料做風險控管與下一交易日策略整理，不要保證漲跌，不要鼓吹重倉，不要說自己能預測未來。
@@ -735,7 +761,7 @@ MACD：${analysis.macdRed ? "翻紅" : "整理"}
 每點最多 80 字，務必完整寫完 1 到 5 點；回答要務實、保守、有條件式。`.trim();
 }
 
-async function callGemini(prompt, apiKey) {
+async function callGemini(prompt, apiKey, maxOutputTokens = 4096) {
   const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
     method: "POST",
     headers: {
@@ -751,7 +777,10 @@ async function callGemini(prompt, apiKey) {
       ],
       generationConfig: {
         temperature: 0.25,
-        maxOutputTokens: 2048
+        maxOutputTokens,
+        thinkingConfig: {
+          thinkingBudget: 0
+        }
       }
     })
   });
@@ -768,10 +797,10 @@ async function callGemini(prompt, apiKey) {
     .join("")
     .trim();
   if (!text) throw new Error("Google AI 沒有回傳文字內容");
-  if (candidate.finishReason === "MAX_TOKENS") {
-    return `${text}\n\n提醒：Google AI 回覆被長度限制截斷，請再按一次「用 Google AI 分析」重新產生。`;
-  }
-  return text;
+  return {
+    text,
+    finishReason: candidate.finishReason || ""
+  };
 }
 
 async function generateGoogleAiStrategy() {
@@ -802,7 +831,18 @@ async function generateGoogleAiStrategy() {
 
   try {
     const prompt = buildGoogleAiPrompt(currentAnalysis, buyDate, buyPrice);
-    const text = await callGemini(prompt, apiKey);
+    let result = await callGemini(prompt, apiKey, 4096);
+
+    if (result.finishReason === "MAX_TOKENS") {
+      updateGoogleAiStatus("重試中");
+      renderPlainText(googleAiResult, "Google AI 回覆太長，正在自動改用短版策略...");
+      const compactPrompt = buildGoogleAiPrompt(currentAnalysis, buyDate, buyPrice, true);
+      result = await callGemini(compactPrompt, apiKey, 1024);
+    }
+
+    const text = result.finishReason === "MAX_TOKENS"
+      ? `${result.text}\n\n提醒：Google AI 仍回覆過長，我已改用短版格式但它仍被截斷。`
+      : result.text;
     updateGoogleAiStatus("完成");
     renderPlainText(googleAiResult, text);
   } catch (error) {
