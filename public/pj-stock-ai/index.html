@@ -62,9 +62,9 @@
         <canvas id="priceChart" width="680" height="320" aria-label="價格線圖"></canvas>
       </section>
 
-      <section class="position-section" aria-label="明日持股策略">
+      <section class="position-section" aria-label="下一交易日持股策略">
         <div class="section-head">
-          <h2>明日持股策略</h2>
+          <h2>下一交易日策略</h2>
           <span id="positionStatus">未輸入</span>
         </div>
         <form id="positionForm" class="position-form">
@@ -76,10 +76,10 @@
             買進價
             <input id="buyPriceInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="例如 980" aria-label="買進價">
           </label>
-          <button type="submit">分析明天</button>
+          <button type="submit">分析策略</button>
         </form>
         <div class="position-result" id="positionResult">
-          <p>輸入買進日期與買進價後，會依照目前官方收盤資料產生明天策略。</p>
+          <p>輸入買進日期與買進價後，會依照目前官方收盤資料產生下一交易日策略。</p>
         </div>
       </section>
 

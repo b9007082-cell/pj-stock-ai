@@ -51,6 +51,18 @@ function formatPercent(value) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
+function getNextTradingDate(dateText) {
+  if (!dateText) return "下一交易日";
+  const date = new Date(`${dateText}T12:00:00+08:00`);
+  if (Number.isNaN(date.getTime())) return "下一交易日";
+
+  do {
+    date.setDate(date.getDate() + 1);
+  } while (date.getDay() === 0 || date.getDay() === 6);
+
+  return date.toISOString().slice(0, 10);
+}
+
 function movingAverage(values, days) {
   const segment = values.slice(-days);
   if (segment.length < days) return NaN;
@@ -171,6 +183,7 @@ function analyze(quote) {
     last: livePrice,
     lastClose,
     dataLabel,
+    nextTradingDate: getNextTradingDate(quote.dataDate),
     source: quote.source || "TWSE_STOCK_DAY",
     exchangeName: quote.exchangeName || "TWSE",
     score,
@@ -335,6 +348,7 @@ function buildTomorrowStrategy(analysis, buyDate, buyPrice) {
   const profitPercent = ((analysis.last - buyPrice) / buyPrice) * 100;
   const riskPercent = ((analysis.stop - analysis.last) / analysis.last) * 100;
   const resistancePercent = ((analysis.breakout - analysis.last) / analysis.last) * 100;
+  const nextTradingText = analysis.nextTradingDate || "下一交易日";
   const foundBuyDay = analysis.prices.find((item) => item.date === buyDate);
   const buyDayText = foundBuyDay
     ? `買進日收盤 ${formatPrice(foundBuyDay.close)}`
@@ -344,26 +358,26 @@ function buildTomorrowStrategy(analysis, buyDate, buyPrice) {
 
   if (analysis.last <= analysis.stop || profitPercent <= -8) {
     action = "優先控風險";
-    tone = `若明天跌破 ${formatPrice(analysis.stop)}，先減碼或停損，不要凹單。`;
+    tone = `若 ${nextTradingText} 跌破 ${formatPrice(analysis.stop)}，先減碼或停損，不要凹單。`;
   } else if (profitPercent >= 12 && resistancePercent <= 3) {
     action = "靠近壓力分批落袋";
-    tone = `已獲利 ${formatPercent(profitPercent)}，又接近突破壓力 ${formatPrice(analysis.breakout)}，明天若上攻無量可先分批賣一部分。`;
+    tone = `已獲利 ${formatPercent(profitPercent)}，又接近突破壓力 ${formatPrice(analysis.breakout)}，${nextTradingText} 若上攻無量可先分批賣一部分。`;
   } else if (analysis.score >= 88 && analysis.last > buyPrice) {
     action = "偏多續抱";
-    tone = `趨勢分數仍強，明天不跌破 ${formatPrice(analysis.pullback)} 可續抱；突破 ${formatPrice(analysis.breakout)} 且有量再考慮加碼。`;
+    tone = `趨勢分數仍強，${nextTradingText} 不跌破 ${formatPrice(analysis.pullback)} 可續抱；突破 ${formatPrice(analysis.breakout)} 且有量再考慮加碼。`;
   } else if (analysis.score >= 74) {
     action = "等確認";
-    tone = `條件還可以，但不要追高。明天站上 ${formatPrice(analysis.breakout)} 才轉強，跌破 ${formatPrice(analysis.pullback)} 要保守。`;
+    tone = `條件還可以，但不要追高。${nextTradingText} 站上 ${formatPrice(analysis.breakout)} 才轉強，跌破 ${formatPrice(analysis.pullback)} 要保守。`;
   } else {
     action = "降低持股";
-    tone = `目前分數偏弱，明天若反彈無法站回 ${formatPrice(analysis.pullback)}，建議降低持股。`;
+    tone = `目前分數偏弱，${nextTradingText} 若反彈無法站回 ${formatPrice(analysis.pullback)}，建議降低持股。`;
   }
 
   return {
     action,
     html: `
       <p><strong>${analysis.name} ${analysis.symbol}</strong>，買進價 ${formatPrice(buyPrice)}，目前收盤 ${formatPrice(analysis.last)}，損益 ${formatPercent(profitPercent)}。</p>
-      <p>${buyDayText}。明天策略：<strong>${action}</strong>。${tone}</p>
+      <p>${buyDayText}。${nextTradingText} 策略：<strong>${action}</strong>。${tone}</p>
       <p>關鍵價位：壓力 ${formatPrice(analysis.breakout)}，回測 ${formatPrice(analysis.pullback)}，防守 ${formatPrice(analysis.stop)}。目前離防守價 ${formatPercent(riskPercent)}，離突破價 ${formatPercent(resistancePercent)}。</p>
     `
   };
@@ -383,7 +397,7 @@ function updatePositionStrategy() {
 
   if (!buyDate || !Number.isFinite(buyPrice) || buyPrice <= 0) {
     positionStatus.textContent = "未輸入";
-    positionResult.innerHTML = "<p>輸入買進日期與買進價後，會依照目前官方收盤資料產生明天策略。</p>";
+    positionResult.innerHTML = "<p>輸入買進日期與買進價後，會依照目前官方收盤資料產生下一交易日策略。</p>";
     return;
   }
 
