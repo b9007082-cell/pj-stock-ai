@@ -31,6 +31,10 @@ jobs:
 
       - name: Generate official stock data
         run: node scripts/update-stock-data.js
+        env:
+          PJ_STOCK_ALL_TWSE: "1"
+          PJ_STOCK_ALL_TPEX: "1"
+          PJ_STOCK_BATCH_SIZE: "6"
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
