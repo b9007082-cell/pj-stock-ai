@@ -1,6 +1,9 @@
 name: Deploy PJ Stock AI
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
   schedule:
     - cron: "30 9 * * 1-5"
