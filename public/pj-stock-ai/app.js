@@ -11,6 +11,7 @@ const stockNames = {
 const scannerSymbols = ["6173", "3530", "2327", "3236", "2375", "6104", "4973"];
 const storageKey = "pj-stock-ai-watchlist";
 const geminiKeyStorageKey = "pj-stock-ai-gemini-key";
+const dataVersion = "d8010c9";
 
 let currentAnalysis = null;
 let deferredInstallPrompt = null;
@@ -230,7 +231,7 @@ async function fetchQuote(symbol) {
   const cleanSymbol = String(symbol).replace(/\D/g, "").slice(0, 6) || "2327";
   const isLocalServer = ["localhost", "127.0.0.1"].includes(window.location.hostname);
   const forceStaticData = new URLSearchParams(window.location.search).has("static");
-  const staticUrl = `./data/stocks/${cleanSymbol}.json`;
+  const staticUrl = `./data/stocks/${cleanSymbol}.json?v=${dataVersion}`;
   const apiUrl = `/api/tw-stock/${cleanSymbol}`;
   const urls = isLocalServer
     ? (forceStaticData ? [staticUrl, apiUrl] : [apiUrl, staticUrl])
