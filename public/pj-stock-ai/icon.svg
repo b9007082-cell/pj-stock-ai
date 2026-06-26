@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#101319"/>
+  <path d="M88 350h336" stroke="#303744" stroke-width="22" stroke-linecap="round"/>
+  <path d="M108 324l72-76 58 42 98-126 68 54" fill="none" stroke="#3ecf8e" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="336" cy="164" r="28" fill="#f4b860"/>
+  <text x="92" y="426" fill="#f4f0e8" font-family="Arial, sans-serif" font-size="76" font-weight="800">PJ</text>
+</svg>

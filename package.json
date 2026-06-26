@@ -1,0 +1,12 @@
+{
+  "name": "pj-stock-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PJ Stock AI mobile stock scanner for GitHub Pages.",
+  "scripts": {
+    "update:stock-data": "node scripts/update-stock-data.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

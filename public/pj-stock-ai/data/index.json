@@ -1,0 +1,61 @@
+{
+  "generatedAt": "2026-06-26T12:36:24.208Z",
+  "stocks": [
+    {
+      "symbol": "6173",
+      "name": "信昌電",
+      "source": "TPEX_TRADING_STOCK",
+      "exchangeName": "TPEx",
+      "dataDate": "2026-06-26",
+      "regularMarketPrice": 276
+    },
+    {
+      "symbol": "3530",
+      "name": "晶相光",
+      "source": "TWSE_STOCK_DAY",
+      "exchangeName": "TWSE",
+      "dataDate": "2026-06-26",
+      "regularMarketPrice": 67.6
+    },
+    {
+      "symbol": "2327",
+      "name": "國巨*",
+      "source": "TWSE_STOCK_DAY",
+      "exchangeName": "TWSE",
+      "dataDate": "2026-06-26",
+      "regularMarketPrice": 1015
+    },
+    {
+      "symbol": "3236",
+      "name": "千如",
+      "source": "TPEX_TRADING_STOCK",
+      "exchangeName": "TPEx",
+      "dataDate": "2026-06-26",
+      "regularMarketPrice": 67.5
+    },
+    {
+      "symbol": "2375",
+      "name": "凱美",
+      "source": "TWSE_STOCK_DAY",
+      "exchangeName": "TWSE",
+      "dataDate": "2026-06-26",
+      "regularMarketPrice": 197.5
+    },
+    {
+      "symbol": "6104",
+      "name": "創惟",
+      "source": "TPEX_TRADING_STOCK",
+      "exchangeName": "TPEx",
+      "dataDate": "2026-06-26",
+      "regularMarketPrice": 96.5
+    },
+    {
+      "symbol": "4973",
+      "name": "廣穎",
+      "source": "TPEX_TRADING_STOCK",
+      "exchangeName": "TPEx",
+      "dataDate": "2026-06-26",
+      "regularMarketPrice": 180
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101319">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="PJ Stock AI">
+  <title>PJ Stock AI</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css?v=5">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Taiwan Stock Scanner</p>
+        <h1>PJ Stock AI</h1>
+      </div>
+      <button class="icon-button" id="installBtn" type="button" aria-label="安裝">
+        <span aria-hidden="true">+</span>
+      </button>
+    </header>
+
+    <main>
+      <section class="search-panel" aria-label="股票分析">
+        <form id="stockForm" class="search-form">
+          <label for="tickerInput">股票代號</label>
+          <div class="input-row">
+            <input id="tickerInput" inputmode="numeric" autocomplete="off" maxlength="6" value="2327" aria-label="股票代號">
+            <button type="submit">開始分析</button>
+          </div>
+        </form>
+        <div class="quick-list" aria-label="快速代號">
+          <button type="button" data-symbol="2327">2327</button>
+          <button type="button" data-symbol="6104">6104</button>
+          <button type="button" data-symbol="3236">3236</button>
+          <button type="button" data-symbol="4973">4973</button>
+        </div>
+      </section>
+
+      <section class="summary-band" aria-label="分析摘要">
+        <div class="score-block">
+          <p id="stockName">國巨 2327</p>
+          <strong id="scoreValue">95</strong>
+          <span id="scoreStars">★★★★★</span>
+        </div>
+        <div class="verdict-block">
+          <span id="verdictBadge">可以布局</span>
+          <p id="verdictText">多頭排列完整，等待突破或回測止跌。</p>
+        </div>
+      </section>
+
+      <section class="chart-section" aria-label="價格走勢">
+        <div class="chart-head">
+          <div>
+            <h2 id="chartTitle">價格結構</h2>
+            <p id="chartMeta">60 日模擬線圖</p>
+          </div>
+          <button class="ghost-button" id="watchBtn" type="button">加入自選</button>
+        </div>
+        <canvas id="priceChart" width="680" height="320" aria-label="價格線圖"></canvas>
+      </section>
+
+      <section class="tabs" aria-label="分析分頁">
+        <button class="tab active" type="button" data-tab="signals">條件</button>
+        <button class="tab" type="button" data-tab="plan">買點</button>
+        <button class="tab" type="button" data-tab="scanner">排行</button>
+      </section>
+
+      <section class="tab-panel active" id="signalsPanel" aria-label="條件分析">
+        <div class="signal-grid" id="signalGrid"></div>
+      </section>
+
+      <section class="tab-panel" id="planPanel" aria-label="交易計畫">
+        <div class="plan-grid">
+          <article class="metric-tile">
+            <span>突破買</span>
+            <strong id="breakoutBuy">1105</strong>
+            <small id="breakoutRank">★★★★★</small>
+          </article>
+          <article class="metric-tile">
+            <span>回測買</span>
+            <strong id="pullbackBuy">1072</strong>
+            <small id="pullbackRank">★★★★☆</small>
+          </article>
+          <article class="metric-tile danger">
+            <span>停損</span>
+            <strong id="stopLoss">1045</strong>
+            <small>跌破轉弱</small>
+          </article>
+          <article class="metric-tile target">
+            <span>目標</span>
+            <strong id="targetPrice">1180</strong>
+            <small>第一壓力</small>
+          </article>
+        </div>
+        <article class="ai-note">
+          <h2>AI 分析</h2>
+          <p id="aiText"></p>
+        </article>
+      </section>
+
+      <section class="tab-panel" id="scannerPanel" aria-label="今日排行">
+        <div class="scanner-list" id="scannerList"></div>
+      </section>
+
+      <section class="watchlist-section" aria-label="自選股">
+        <div class="section-head">
+          <h2>自選股</h2>
+          <button class="text-button" id="clearWatchBtn" type="button">清空</button>
+        </div>
+        <div class="watchlist" id="watchlist"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./app.js?v=gh2" defer></script>
+</body>
+</html>
