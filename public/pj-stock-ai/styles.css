@@ -327,6 +327,103 @@ h2 {
   color: var(--text);
 }
 
+.google-ai-panel {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(103, 212, 255, 0.35);
+  border-radius: var(--radius);
+  background: rgba(13, 18, 27, 0.74);
+}
+
+.google-ai-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.google-ai-head h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.google-ai-head p,
+.google-ai-result p {
+  color: #d9e0e4;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.google-ai-head span {
+  flex: 0 0 auto;
+  color: var(--cyan);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.gemini-key-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+}
+
+.gemini-key-row input {
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  outline: 0;
+  background: #0e1117;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.gemini-key-row input:focus {
+  border-color: var(--cyan);
+}
+
+.gemini-key-row button,
+.google-ai-button {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.gemini-key-row button {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+.google-ai-button {
+  width: 100%;
+  margin-top: 8px;
+  background: var(--cyan);
+  color: var(--ink);
+}
+
+.google-ai-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.google-ai-result {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 6px;
+  background: #0e1117;
+}
+
+.google-ai-result strong {
+  color: var(--text);
+}
+
 .text-button {
   background: transparent;
 }
@@ -513,7 +610,8 @@ canvas {
 
   .signal-grid,
   .plan-grid,
-  .position-form {
+  .position-form,
+  .gemini-key-row {
     grid-template-columns: 1fr;
   }
 

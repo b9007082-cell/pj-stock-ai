@@ -81,6 +81,24 @@
         <div class="position-result" id="positionResult">
           <p>輸入買進日期與買進價後，會依照目前官方收盤資料產生下一交易日策略。</p>
         </div>
+        <div class="google-ai-panel" aria-label="Google AI 分析">
+          <div class="google-ai-head">
+            <div>
+              <h3>Google AI 分析</h3>
+              <p>貼上 Gemini API Key 後，可讓 Google AI 幫你整理下一交易日策略。</p>
+            </div>
+            <span id="googleAiStatus">未啟用</span>
+          </div>
+          <div class="gemini-key-row">
+            <input id="geminiKeyInput" type="password" autocomplete="off" placeholder="Gemini API Key" aria-label="Gemini API Key">
+            <button id="saveGeminiKeyBtn" type="button">儲存</button>
+            <button id="clearGeminiKeyBtn" type="button">清除</button>
+          </div>
+          <button class="google-ai-button" id="googleAiBtn" type="button">用 Google AI 分析</button>
+          <div class="google-ai-result" id="googleAiResult">
+            <p>Google AI 會讀取目前股票、買進日期、買進價、技術分數與關鍵價位，再產生偏短線的策略提醒。</p>
+          </div>
+        </div>
       </section>
 
       <section class="tabs" aria-label="分析分頁">
@@ -136,6 +154,6 @@
     </main>
   </div>
 
-  <script src="./app.js?v=gh4" defer></script>
+  <script src="./app.js?v=gh5" defer></script>
 </body>
 </html>
