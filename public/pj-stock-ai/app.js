@@ -36,10 +36,6 @@ const clearGeminiKeyBtn = document.querySelector("#clearGeminiKeyBtn");
 const googleAiBtn = document.querySelector("#googleAiBtn");
 const googleAiStatus = document.querySelector("#googleAiStatus");
 const googleAiResult = document.querySelector("#googleAiResult");
-const taiwanMarketInput = document.querySelector("#taiwanMarketInput");
-const usTechInput = document.querySelector("#usTechInput");
-const soxInput = document.querySelector("#soxInput");
-const koreaMarketInput = document.querySelector("#koreaMarketInput");
 const canvas = document.querySelector("#priceChart");
 const ctx = canvas.getContext("2d");
 
@@ -671,28 +667,6 @@ function getGeminiKey() {
   return (geminiKeyInput?.value || localStorage.getItem(geminiKeyStorageKey) || "").trim();
 }
 
-function getMarketContext() {
-  const taiwanMarket = taiwanMarketInput?.value || "未輸入";
-  const usTech = usTechInput?.value || "未輸入";
-  const sox = soxInput?.value || "未輸入";
-  const koreaMarket = koreaMarketInput?.value || "未輸入";
-  const values = [taiwanMarket, usTech, sox, koreaMarket];
-  const hasContext = values.some((value) => value !== "未輸入");
-  const summary = `台股大盤：${taiwanMarket}；美股科技：${usTech}；費半：${sox}；韓股：${koreaMarket}`;
-
-  return {
-    taiwanMarket,
-    usTech,
-    sox,
-    koreaMarket,
-    hasContext,
-    summary,
-    note: hasContext
-      ? "請把市場背景當成風險權重：大盤與國際科技股偏多時可略積極；偏空時降低追價與加碼。"
-      : "使用者未輸入市場背景，請不要自行假設大盤、美股、韓股方向。"
-  };
-}
-
 function updateGoogleAiStatus(message) {
   if (!googleAiStatus || !googleAiResult) return;
   const hasKey = Boolean(getGeminiKey());
@@ -725,11 +699,11 @@ function buildGoogleAiPrompt(analysis, buyDate, buyPrice, compact = false) {
   const builtInStrategy = Number.isFinite(buyPrice) && buyPrice > 0 && buyDate
     ? buildTomorrowStrategy(analysis, buyDate, buyPrice).action
     : "尚未輸入持股成本";
-  const marketContext = getMarketContext();
 
   if (compact) {
     return `
-請用繁體中文，根據資料輸出完整 5 點短線策略。每點一行，每點最多 45 字，不要前言。
+請用繁體中文，根據個股資料與最新市場背景輸出完整 5 點短線策略。每點一行，每點最多 45 字，不要前言。
+請綜合考量台股大盤、櫃買、NASDAQ、S&P 500、費半、KOSPI、KOSDAQ 的近期走勢；若搜尋不到即時資料，請明說資料不足，不要自行假設。
 
 股票：${analysis.name} ${analysis.symbol}
 下一交易日：${analysis.nextTradingDate}
@@ -744,18 +718,24 @@ function buildGoogleAiPrompt(analysis, buyDate, buyPrice, compact = false) {
 買進價：${Number.isFinite(buyPrice) && buyPrice > 0 ? formatPrice(buyPrice) : "未輸入"}
 損益：${Number.isFinite(profitPercent) ? formatPercent(profitPercent) : "未輸入"}
 內建策略：${builtInStrategy}
-市場背景：${marketContext.summary}
 
 格式：
-1. 開盤前：
-2. 盤中：
-3. 停損：
-4. 轉強：
+1. 市場：
+2. 開盤前：
+3. 盤中：
+4. 停損：
 5. 提醒：`.trim();
   }
 
   return `
-你是台股短線策略助理，請用繁體中文回答。請只根據以下資料做風險控管與下一交易日策略整理，不要保證漲跌，不要鼓吹重倉，不要說自己能預測未來。
+你是台股短線策略助理，請用繁體中文回答。請只根據以下個股資料，並搭配最新市場背景做風險控管與下一交易日策略整理，不要保證漲跌，不要鼓吹重倉，不要說自己能預測未來。
+
+請自行綜合考量：
+- 台股大盤與櫃買市場近期強弱
+- 美股 NASDAQ、S&P 500、費城半導體指數近期走勢
+- 韓國 KOSPI、KOSDAQ 近期走勢
+- 若與該股產業相關，也可納入電子、半導體、被動元件或相關族群情緒
+- 若搜尋不到即時市場資料，請明確寫「市場背景資料不足」，不要憑空假設
 
 股票：${analysis.name} ${analysis.symbol}
 資料來源：${analysis.exchangeName} ${analysis.source}
@@ -778,8 +758,6 @@ MACD：${analysis.macdRed ? "翻紅" : "整理"}
 買進價：${Number.isFinite(buyPrice) && buyPrice > 0 ? formatPrice(buyPrice) : "未輸入"}
 目前損益：${Number.isFinite(profitPercent) ? formatPercent(profitPercent) : "未輸入"}
 內建策略：${builtInStrategy}
-市場背景：${marketContext.summary}
-市場背景用法：${marketContext.note}
 
 請輸出：
 1. 大盤與國際股市背景判斷
@@ -789,6 +767,21 @@ MACD：${analysis.macdRed ? "翻紅" : "整理"}
 5. 一句最重要提醒
 
 每點最多 80 字，務必完整寫完 1 到 5 點；回答要務實、保守、有條件式。`.trim();
+}
+
+function appendGroundingSources(text, candidate) {
+  const chunks = candidate?.groundingMetadata?.groundingChunks || [];
+  const sources = chunks
+    .map((chunk) => chunk.web)
+    .filter((web) => web?.uri)
+    .slice(0, 4);
+
+  if (!sources.length) return text;
+
+  const sourceText = sources
+    .map((source, index) => `${index + 1}. ${source.title || "Google Search"} - ${source.uri}`)
+    .join("\n");
+  return `${text}\n\n搜尋參考：\n${sourceText}`;
 }
 
 async function callGemini(prompt, apiKey, maxOutputTokens = 4096) {
@@ -805,6 +798,7 @@ async function callGemini(prompt, apiKey, maxOutputTokens = 4096) {
           parts: [{ text: prompt }]
         }
       ],
+      tools: [{ google_search: {} }],
       generationConfig: {
         temperature: 0.25,
         maxOutputTokens,
@@ -828,7 +822,7 @@ async function callGemini(prompt, apiKey, maxOutputTokens = 4096) {
     .trim();
   if (!text) throw new Error("Google AI 沒有回傳文字內容");
   return {
-    text,
+    text: appendGroundingSources(text, candidate),
     finishReason: candidate.finishReason || ""
   };
 }

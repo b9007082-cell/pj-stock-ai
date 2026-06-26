@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="PJ Stock AI">
   <title>PJ Stock AI</title>
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=8">
+  <link rel="stylesheet" href="./styles.css?v=9">
 </head>
 <body>
   <div class="app-shell">
@@ -85,47 +85,9 @@
           <div class="google-ai-head">
             <div>
               <h3>Google AI 分析</h3>
-              <p>貼上 Gemini API Key 後，可搭配大盤與國際股市整理下一交易日策略。</p>
+              <p>貼上 Gemini API Key 後，會綜合個股、大盤、美股與韓股整理下一交易日策略。</p>
             </div>
             <span id="googleAiStatus">未啟用</span>
-          </div>
-          <div class="market-context" aria-label="市場背景">
-            <label>
-              台股大盤
-              <select id="taiwanMarketInput" aria-label="台股大盤">
-                <option value="未輸入">未輸入</option>
-                <option value="偏多">偏多</option>
-                <option value="震盪">震盪</option>
-                <option value="偏空">偏空</option>
-              </select>
-            </label>
-            <label>
-              美股科技
-              <select id="usTechInput" aria-label="美股科技">
-                <option value="未輸入">未輸入</option>
-                <option value="偏多">偏多</option>
-                <option value="震盪">震盪</option>
-                <option value="偏空">偏空</option>
-              </select>
-            </label>
-            <label>
-              費半
-              <select id="soxInput" aria-label="費半">
-                <option value="未輸入">未輸入</option>
-                <option value="偏多">偏多</option>
-                <option value="震盪">震盪</option>
-                <option value="偏空">偏空</option>
-              </select>
-            </label>
-            <label>
-              韓股
-              <select id="koreaMarketInput" aria-label="韓股">
-                <option value="未輸入">未輸入</option>
-                <option value="偏多">偏多</option>
-                <option value="震盪">震盪</option>
-                <option value="偏空">偏空</option>
-              </select>
-            </label>
           </div>
           <div class="gemini-key-row">
             <input id="geminiKeyInput" type="password" autocomplete="off" placeholder="Gemini API Key" aria-label="Gemini API Key">
@@ -192,6 +154,6 @@
     </main>
   </div>
 
-  <script src="./app.js?v=gh13" defer></script>
+  <script src="./app.js?v=gh14" defer></script>
 </body>
 </html>

@@ -30,8 +30,7 @@ body {
 }
 
 button,
-input,
-select {
+input {
   font: inherit;
 }
 
@@ -370,22 +369,6 @@ h2 {
   gap: 8px;
 }
 
-.market-context {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.market-context label {
-  display: grid;
-  gap: 6px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.market-context select,
 .gemini-key-row input {
   min-width: 0;
   height: 40px;
@@ -399,7 +382,6 @@ h2 {
   font-weight: 700;
 }
 
-.market-context select:focus,
 .gemini-key-row input:focus {
   border-color: var(--cyan);
 }
@@ -658,7 +640,6 @@ canvas {
   .signal-grid,
   .plan-grid,
   .position-form,
-  .market-context,
   .gemini-key-row {
     grid-template-columns: 1fr;
   }
