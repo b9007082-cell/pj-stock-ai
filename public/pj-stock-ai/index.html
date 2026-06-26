@@ -62,6 +62,27 @@
         <canvas id="priceChart" width="680" height="320" aria-label="價格線圖"></canvas>
       </section>
 
+      <section class="position-section" aria-label="明日持股策略">
+        <div class="section-head">
+          <h2>明日持股策略</h2>
+          <span id="positionStatus">未輸入</span>
+        </div>
+        <form id="positionForm" class="position-form">
+          <label>
+            買進日期
+            <input id="buyDateInput" type="date" aria-label="買進日期">
+          </label>
+          <label>
+            買進價
+            <input id="buyPriceInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="例如 980" aria-label="買進價">
+          </label>
+          <button type="submit">分析明天</button>
+        </form>
+        <div class="position-result" id="positionResult">
+          <p>輸入買進日期與買進價後，會依照目前官方收盤資料產生明天策略。</p>
+        </div>
+      </section>
+
       <section class="tabs" aria-label="分析分頁">
         <button class="tab active" type="button" data-tab="signals">條件</button>
         <button class="tab" type="button" data-tab="plan">買點</button>
@@ -115,6 +136,6 @@
     </main>
   </div>
 
-  <script src="./app.js?v=gh2" defer></script>
+  <script src="./app.js?v=gh3" defer></script>
 </body>
 </html>

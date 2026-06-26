@@ -23,6 +23,11 @@ const watchlist = document.querySelector("#watchlist");
 const watchBtn = document.querySelector("#watchBtn");
 const clearWatchBtn = document.querySelector("#clearWatchBtn");
 const installBtn = document.querySelector("#installBtn");
+const positionForm = document.querySelector("#positionForm");
+const buyDateInput = document.querySelector("#buyDateInput");
+const buyPriceInput = document.querySelector("#buyPriceInput");
+const positionStatus = document.querySelector("#positionStatus");
+const positionResult = document.querySelector("#positionResult");
 const canvas = document.querySelector("#priceChart");
 const ctx = canvas.getContext("2d");
 
@@ -39,6 +44,11 @@ function stars(score) {
 function formatPrice(value) {
   if (!Number.isFinite(value)) return "--";
   return value >= 100 ? Number(value).toFixed(0) : Number(value).toFixed(2);
+}
+
+function formatPercent(value) {
+  if (!Number.isFinite(value)) return "--";
+  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
 function movingAverage(values, days) {
@@ -284,6 +294,7 @@ function renderAnalysis(analysis) {
 
   watchBtn.textContent = getWatchlist().includes(analysis.symbol) ? "已加入自選" : "加入自選";
   drawChart(analysis);
+  updatePositionStrategy();
 }
 
 function renderLoading(symbol) {
@@ -317,6 +328,68 @@ function renderError(symbol, message) {
   document.querySelector("#aiText").textContent = `${cleanSymbol} 行情資料讀取失敗：${message}。我已停止使用假價格，請稍後重試或確認網路連線。`;
   signalGrid.innerHTML = `<article class="signal-card"><span>資料狀態</span><strong>讀取失敗</strong><small>未使用假資料</small></article>`;
   drawChart({ candles: [] });
+  updatePositionStrategy();
+}
+
+function buildTomorrowStrategy(analysis, buyDate, buyPrice) {
+  const profitPercent = ((analysis.last - buyPrice) / buyPrice) * 100;
+  const riskPercent = ((analysis.stop - analysis.last) / analysis.last) * 100;
+  const resistancePercent = ((analysis.breakout - analysis.last) / analysis.last) * 100;
+  const foundBuyDay = analysis.prices.find((item) => item.date === buyDate);
+  const buyDayText = foundBuyDay
+    ? `買進日收盤 ${formatPrice(foundBuyDay.close)}`
+    : "買進日不在目前資料區間";
+  let action = "續抱觀察";
+  let tone = "目前不急著動作，明天先看關鍵價位。";
+
+  if (analysis.last <= analysis.stop || profitPercent <= -8) {
+    action = "優先控風險";
+    tone = `若明天跌破 ${formatPrice(analysis.stop)}，先減碼或停損，不要凹單。`;
+  } else if (profitPercent >= 12 && resistancePercent <= 3) {
+    action = "靠近壓力分批落袋";
+    tone = `已獲利 ${formatPercent(profitPercent)}，又接近突破壓力 ${formatPrice(analysis.breakout)}，明天若上攻無量可先分批賣一部分。`;
+  } else if (analysis.score >= 88 && analysis.last > buyPrice) {
+    action = "偏多續抱";
+    tone = `趨勢分數仍強，明天不跌破 ${formatPrice(analysis.pullback)} 可續抱；突破 ${formatPrice(analysis.breakout)} 且有量再考慮加碼。`;
+  } else if (analysis.score >= 74) {
+    action = "等確認";
+    tone = `條件還可以，但不要追高。明天站上 ${formatPrice(analysis.breakout)} 才轉強，跌破 ${formatPrice(analysis.pullback)} 要保守。`;
+  } else {
+    action = "降低持股";
+    tone = `目前分數偏弱，明天若反彈無法站回 ${formatPrice(analysis.pullback)}，建議降低持股。`;
+  }
+
+  return {
+    action,
+    html: `
+      <p><strong>${analysis.name} ${analysis.symbol}</strong>，買進價 ${formatPrice(buyPrice)}，目前收盤 ${formatPrice(analysis.last)}，損益 ${formatPercent(profitPercent)}。</p>
+      <p>${buyDayText}。明天策略：<strong>${action}</strong>。${tone}</p>
+      <p>關鍵價位：壓力 ${formatPrice(analysis.breakout)}，回測 ${formatPrice(analysis.pullback)}，防守 ${formatPrice(analysis.stop)}。目前離防守價 ${formatPercent(riskPercent)}，離突破價 ${formatPercent(resistancePercent)}。</p>
+    `
+  };
+}
+
+function updatePositionStrategy() {
+  if (!positionResult || !positionStatus) return;
+
+  const buyDate = buyDateInput.value;
+  const buyPrice = Number(buyPriceInput.value);
+
+  if (!currentAnalysis) {
+    positionStatus.textContent = "無行情";
+    positionResult.innerHTML = "<p>目前沒有可用行情，先不要產生策略。</p>";
+    return;
+  }
+
+  if (!buyDate || !Number.isFinite(buyPrice) || buyPrice <= 0) {
+    positionStatus.textContent = "未輸入";
+    positionResult.innerHTML = "<p>輸入買進日期與買進價後，會依照目前官方收盤資料產生明天策略。</p>";
+    return;
+  }
+
+  const strategy = buildTomorrowStrategy(currentAnalysis, buyDate, buyPrice);
+  positionStatus.textContent = strategy.action;
+  positionResult.innerHTML = strategy.html;
 }
 
 async function loadAndRender(symbol) {
@@ -405,6 +478,14 @@ form.addEventListener("submit", (event) => {
   event.preventDefault();
   loadAndRender(input.value);
 });
+
+positionForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  updatePositionStrategy();
+});
+
+buyDateInput.addEventListener("change", updatePositionStrategy);
+buyPriceInput.addEventListener("input", updatePositionStrategy);
 
 quickList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-symbol]");

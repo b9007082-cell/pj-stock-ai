@@ -99,6 +99,7 @@ h2 {
 .search-panel,
 .chart-section,
 .ai-note,
+.position-section,
 .watchlist-section {
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -228,6 +229,11 @@ h2 {
   padding: 14px;
 }
 
+.position-section {
+  margin-top: 14px;
+  padding: 14px;
+}
+
 .chart-head,
 .section-head {
   display: flex;
@@ -250,6 +256,75 @@ h2 {
   font-size: 13px;
   font-weight: 800;
   white-space: nowrap;
+}
+
+.section-head span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.position-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.position-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.position-form input {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  outline: 0;
+  background: #0e1117;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.position-form input:focus {
+  border-color: var(--green);
+}
+
+.position-form button {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--green);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.position-result {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #11161d;
+}
+
+.position-result p {
+  color: #d9e0e4;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.position-result strong {
+  color: var(--text);
 }
 
 .text-button {
@@ -437,7 +512,8 @@ canvas {
   }
 
   .signal-grid,
-  .plan-grid {
+  .plan-grid,
+  .position-form {
     grid-template-columns: 1fr;
   }
 
