@@ -81,9 +81,11 @@ async function fetchQuote(symbol) {
   const cleanSymbol = String(symbol).replace(/\D/g, "").slice(0, 6) || "2327";
   const isLocalServer = ["localhost", "127.0.0.1"].includes(window.location.hostname);
   const forceStaticData = new URLSearchParams(window.location.search).has("static");
-  const urls = isLocalServer && !forceStaticData
-    ? [`/api/tw-stock/${cleanSymbol}`, `./data/stocks/${cleanSymbol}.json`]
-    : [`./data/stocks/${cleanSymbol}.json`];
+  const staticUrl = `./data/stocks/${cleanSymbol}.json`;
+  const apiUrl = `/api/tw-stock/${cleanSymbol}`;
+  const urls = isLocalServer
+    ? (forceStaticData ? [staticUrl, apiUrl] : [apiUrl, staticUrl])
+    : [staticUrl];
   const errors = [];
 
   for (const url of urls) {
@@ -97,6 +99,10 @@ async function fetchQuote(symbol) {
     } catch (error) {
       errors.push(error.message);
     }
+  }
+
+  if (!isLocalServer) {
+    throw new Error(`GitHub 靜態版尚未產生 ${cleanSymbol} 的資料檔，請先把這檔加入資料清單並重新部署。`);
   }
 
   throw new Error(errors.at(-1) || "行情資料讀取失敗");

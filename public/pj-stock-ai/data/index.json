@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-26T12:36:24.208Z",
+  "generatedAt": "2026-06-26T13:08:16.748Z",
   "stocks": [
     {
       "symbol": "6173",
@@ -24,6 +24,14 @@
       "exchangeName": "TWSE",
       "dataDate": "2026-06-26",
       "regularMarketPrice": 1015
+    },
+    {
+      "symbol": "2330",
+      "name": "台積電",
+      "source": "TWSE_STOCK_DAY",
+      "exchangeName": "TWSE",
+      "dataDate": "2026-06-26",
+      "regularMarketPrice": 2340
     },
     {
       "symbol": "3236",

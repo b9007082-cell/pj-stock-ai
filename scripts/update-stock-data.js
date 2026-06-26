@@ -1,7 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 
-const symbols = ['6173', '3530', '2327', '3236', '2375', '6104', '4973'];
+const symbols = ['6173', '3530', '2327', '2330', '3236', '2375', '6104', '4973'];
 const outputDir = path.join(__dirname, '..', 'public', 'pj-stock-ai', 'data', 'stocks');
 
 function normalizeTaiwanSymbol(symbol) {
