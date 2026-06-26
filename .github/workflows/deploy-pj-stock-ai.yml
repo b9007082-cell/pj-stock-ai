@@ -30,6 +30,7 @@ jobs:
           node-version: 20
 
       - name: Generate official stock data
+        continue-on-error: true
         run: node scripts/update-stock-data.js
         env:
           PJ_STOCK_ALL_TWSE: "1"
