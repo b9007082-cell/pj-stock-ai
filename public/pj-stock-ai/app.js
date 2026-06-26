@@ -673,7 +673,7 @@ MACD：${analysis.macdRed ? "翻紅" : "整理"}
 4. 若轉強，怎麼加碼或續抱
 5. 一句最重要提醒
 
-每點 1 到 2 句，務必務實、保守、有條件式。`.trim();
+每點最多 80 字，務必完整寫完 1 到 5 點；回答要務實、保守、有條件式。`.trim();
 }
 
 async function callGemini(prompt, apiKey) {
@@ -692,7 +692,7 @@ async function callGemini(prompt, apiKey) {
       ],
       generationConfig: {
         temperature: 0.25,
-        maxOutputTokens: 900
+        maxOutputTokens: 2048
       }
     })
   });
@@ -703,11 +703,15 @@ async function callGemini(prompt, apiKey) {
     throw new Error(message);
   }
 
-  const text = payload.candidates?.[0]?.content?.parts
+  const candidate = payload.candidates?.[0];
+  const text = candidate?.content?.parts
     ?.map((part) => part.text || "")
     .join("")
     .trim();
   if (!text) throw new Error("Google AI 沒有回傳文字內容");
+  if (candidate.finishReason === "MAX_TOKENS") {
+    return `${text}\n\n提醒：Google AI 回覆被長度限制截斷，請再按一次「用 Google AI 分析」重新產生。`;
+  }
   return text;
 }
 
