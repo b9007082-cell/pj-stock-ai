@@ -49,6 +49,15 @@ function parseRocDate(rocDate) {
   return `${rocYear + 1911}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
+function parseRocCompactDate(rocDate) {
+  const text = String(rocDate || '').trim();
+  if (!/^[0-9]{7}$/.test(text)) return null;
+  const year = Number(text.slice(0, 3)) + 1911;
+  const month = text.slice(3, 5);
+  const day = text.slice(5, 7);
+  return `${year}-${month}-${day}`;
+}
+
 function parseListedName(title, symbol) {
   const match = String(title || '').match(new RegExp(`${symbol}\\s+([^\\s]+)`));
   return match?.[1]?.trim() || symbol;
@@ -90,9 +99,16 @@ async function fetchTpexStockList() {
     .map((row) => ({
       symbol: normalizeTaiwanSymbol(row.SecuritiesCompanyCode),
       name: String(row.CompanyName || '').trim(),
-      close: parseNumber(row.Close)
+      exchangeName: 'TPEx',
+      source: 'TPEX_DAILY_CLOSE_QUOTES',
+      dataDate: parseRocCompactDate(row.Date),
+      regularMarketPrice: parseNumber(row.Close),
+      open: parseNumber(row.Open),
+      high: parseNumber(row.High),
+      low: parseNumber(row.Low),
+      volume: parseNumber(row.TradingShares)
     }))
-    .filter((row) => /^[0-9]{4}$/.test(row.symbol) && Number.isFinite(row.close))
+    .filter((row) => /^[0-9]{4}$/.test(row.symbol) && Number.isFinite(row.regularMarketPrice))
     .sort((a, b) => a.symbol.localeCompare(b.symbol));
 
   return maxTpexSymbols > 0 ? stocks.slice(0, maxTpexSymbols) : stocks;
@@ -104,9 +120,16 @@ async function fetchTwseStockList() {
     .map((row) => ({
       symbol: normalizeTaiwanSymbol(row.Code),
       name: String(row.Name || '').trim(),
-      close: parseNumber(row.ClosingPrice)
+      exchangeName: 'TWSE',
+      source: 'TWSE_STOCK_DAY_ALL',
+      dataDate: parseRocCompactDate(row.Date),
+      regularMarketPrice: parseNumber(row.ClosingPrice),
+      open: parseNumber(row.OpeningPrice),
+      high: parseNumber(row.HighestPrice),
+      low: parseNumber(row.LowestPrice),
+      volume: parseNumber(row.TradeVolume)
     }))
-    .filter((row) => /^[0-9]{4}$/.test(row.symbol) && Number.isFinite(row.close))
+    .filter((row) => /^[0-9]{4}$/.test(row.symbol) && Number.isFinite(row.regularMarketPrice))
     .sort((a, b) => a.symbol.localeCompare(b.symbol));
 
   return maxTwseSymbols > 0 ? stocks.slice(0, maxTwseSymbols) : stocks;
@@ -199,23 +222,33 @@ async function fetchOfficialQuote(rawSymbol, exchangeHint = '') {
 async function buildSymbolTargets() {
   const targets = new Map(seedSymbols.map((symbol) => [symbol, { symbol, exchangeHint: '' }]));
 
+  return Array.from(targets.values()).sort((a, b) => a.symbol.localeCompare(b.symbol));
+}
+
+async function buildLatestMarketData() {
+  const stocks = [];
+
   if (includeAllTwse) {
     const twseStocks = await fetchTwseStockList();
-    for (const stock of twseStocks) {
-      targets.set(stock.symbol, { symbol: stock.symbol, exchangeHint: 'TWSE', name: stock.name });
-    }
-    console.log(`loaded ${twseStocks.length} TWSE stock symbols`);
+    stocks.push(...twseStocks);
+    console.log(`loaded ${twseStocks.length} TWSE latest quotes`);
   }
 
   if (includeAllTpex) {
     const tpexStocks = await fetchTpexStockList();
-    for (const stock of tpexStocks) {
-      targets.set(stock.symbol, { symbol: stock.symbol, exchangeHint: 'TPEx', name: stock.name });
-    }
-    console.log(`loaded ${tpexStocks.length} TPEx stock symbols`);
+    stocks.push(...tpexStocks);
+    console.log(`loaded ${tpexStocks.length} TPEx latest quotes`);
   }
 
-  return Array.from(targets.values()).sort((a, b) => a.symbol.localeCompare(b.symbol));
+  const uniqueStocks = Array.from(
+    new Map(stocks.map((stock) => [stock.symbol, stock])).values()
+  ).sort((a, b) => a.symbol.localeCompare(b.symbol));
+
+  await fs.writeFile(
+    path.join(outputDir, '..', 'latest.json'),
+    `${JSON.stringify({ generatedAt: new Date().toISOString(), stocks: uniqueStocks }, null, 2)}\n`,
+    'utf8'
+  );
 }
 
 async function runInBatches(items, worker, size) {
@@ -231,6 +264,8 @@ async function main() {
   await fs.mkdir(outputDir, { recursive: true });
   const index = [];
   const targets = await buildSymbolTargets();
+
+  await buildLatestMarketData();
 
   await runInBatches(targets, async (target) => {
     try {

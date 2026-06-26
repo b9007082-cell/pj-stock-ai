@@ -11,7 +11,7 @@ const stockNames = {
 const scannerSymbols = ["6173", "3530", "2327", "3236", "2375", "6104", "4973"];
 const storageKey = "pj-stock-ai-watchlist";
 const geminiKeyStorageKey = "pj-stock-ai-gemini-key";
-const dataVersion = "895d23c";
+const dataVersion = "market-latest-1";
 
 let currentAnalysis = null;
 let deferredInstallPrompt = null;
@@ -227,6 +227,36 @@ async function fetchOfficialQuote(cleanSymbol) {
   throw new Error("TWSE/TPEx 查無日成交資料");
 }
 
+async function fetchLatestMarketQuote(cleanSymbol) {
+  const response = await fetch(`./data/latest.json?v=${dataVersion}`, { cache: "no-store" });
+  if (!response.ok) throw new Error(`最新行情索引讀取失敗 (${response.status})`);
+  const payload = await response.json();
+  const item = payload.stocks?.find((stock) => stock.symbol === cleanSymbol);
+  if (!item) throw new Error("最新行情索引查無此代號");
+
+  const close = Number(item.regularMarketPrice);
+  const price = {
+    date: item.dataDate,
+    volume: Number(item.volume),
+    open: Number(item.open),
+    high: Number(item.high),
+    low: Number(item.low),
+    close
+  };
+
+  return {
+    symbol: item.symbol,
+    source: item.source,
+    name: item.name,
+    currency: "TWD",
+    exchangeName: item.exchangeName,
+    regularMarketPrice: close,
+    regularMarketTime: `${item.dataDate}T13:30:00+08:00`,
+    dataDate: item.dataDate,
+    prices: [price].filter((row) => row.date && Number.isFinite(row.close))
+  };
+}
+
 async function fetchQuote(symbol) {
   const cleanSymbol = String(symbol).replace(/\D/g, "").slice(0, 6) || "2327";
   const isLocalServer = ["localhost", "127.0.0.1"].includes(window.location.hostname);
@@ -253,6 +283,12 @@ async function fetchQuote(symbol) {
 
   try {
     return await fetchOfficialQuote(cleanSymbol);
+  } catch (error) {
+    errors.push(error.message);
+  }
+
+  try {
+    return await fetchLatestMarketQuote(cleanSymbol);
   } catch (error) {
     errors.push(error.message);
   }
