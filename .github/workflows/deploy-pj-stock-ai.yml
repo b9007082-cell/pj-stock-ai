@@ -30,6 +30,7 @@ jobs:
           node-version: 20
 
       - name: Generate official stock data
+        if: github.event_name != 'push'
         continue-on-error: true
         run: node scripts/update-stock-data.js
         env:
