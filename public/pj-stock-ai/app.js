@@ -668,7 +668,7 @@ function getGeminiKey() {
 }
 
 function isValidGeminiKey(key) {
-  return /^AIza[A-Za-z0-9_-]{20,}$/.test(key);
+  return /^[\x21-\x7E]{20,300}$/.test(key);
 }
 
 function updateGoogleAiStatus(message) {
@@ -686,7 +686,7 @@ function saveGeminiKey() {
   }
   if (!isValidGeminiKey(key)) {
     updateGoogleAiStatus("Key 格式錯誤");
-    renderPlainText(googleAiResult, "這不是有效的 Gemini API Key。請貼上以 AIza 開頭的 Google AI Studio API Key，不要貼入 AI 回覆文字。");
+    renderPlainText(googleAiResult, "這不是有效的 Gemini API Key。請貼上 Google AI Studio 提供的完整 Key（可能以 AIza 或 AQ 開頭），不要貼入 AI 回覆文字或空白。");
     return;
   }
   localStorage.setItem(geminiKeyStorageKey, key);
@@ -851,7 +851,7 @@ async function generateGoogleAiStrategy() {
   }
   if (!isValidGeminiKey(apiKey)) {
     updateGoogleAiStatus("Key 格式錯誤");
-    renderPlainText(googleAiResult, "目前欄位不是 Gemini API Key。請先按「清除」，再貼上以 AIza 開頭的 Google AI Studio API Key，並按「儲存」。");
+    renderPlainText(googleAiResult, "目前欄位不是完整的 Gemini API Key。請先按「清除」，再貼上 Google AI Studio 提供的完整 Key，並按「儲存」。");
     return;
   }
 
