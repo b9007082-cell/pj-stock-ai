@@ -667,10 +667,14 @@ function getGeminiKey() {
   return (geminiKeyInput?.value || localStorage.getItem(geminiKeyStorageKey) || "").trim();
 }
 
+function isValidGeminiKey(key) {
+  return /^AIza[A-Za-z0-9_-]{20,}$/.test(key);
+}
+
 function updateGoogleAiStatus(message) {
   if (!googleAiStatus || !googleAiResult) return;
-  const hasKey = Boolean(getGeminiKey());
-  googleAiStatus.textContent = message || (hasKey ? "已啟用" : "未啟用");
+  const key = getGeminiKey();
+  googleAiStatus.textContent = message || (!key ? "未啟用" : isValidGeminiKey(key) ? "已啟用" : "Key 格式錯誤");
 }
 
 function saveGeminiKey() {
@@ -678,6 +682,11 @@ function saveGeminiKey() {
   if (!key) {
     updateGoogleAiStatus("缺少 Key");
     renderPlainText(googleAiResult, "請先貼上 Gemini API Key，再按儲存。");
+    return;
+  }
+  if (!isValidGeminiKey(key)) {
+    updateGoogleAiStatus("Key 格式錯誤");
+    renderPlainText(googleAiResult, "這不是有效的 Gemini API Key。請貼上以 AIza 開頭的 Google AI Studio API Key，不要貼入 AI 回覆文字。");
     return;
   }
   localStorage.setItem(geminiKeyStorageKey, key);
@@ -840,6 +849,11 @@ async function generateGoogleAiStrategy() {
     renderPlainText(googleAiResult, "請先貼上 Gemini API Key。Key 只會存在你的瀏覽器 localStorage，不會放到 GitHub。");
     return;
   }
+  if (!isValidGeminiKey(apiKey)) {
+    updateGoogleAiStatus("Key 格式錯誤");
+    renderPlainText(googleAiResult, "目前欄位不是 Gemini API Key。請先按「清除」，再貼上以 AIza 開頭的 Google AI Studio API Key，並按「儲存」。");
+    return;
+  }
 
   const buyDate = buyDateInput.value;
   const buyPrice = Number(buyPriceInput.value);
@@ -871,7 +885,10 @@ async function generateGoogleAiStrategy() {
     renderPlainText(googleAiResult, text);
   } catch (error) {
     updateGoogleAiStatus("失敗");
-    renderPlainText(googleAiResult, `Google AI 分析失敗：${error.message}`);
+    const message = error instanceof TypeError
+      ? "瀏覽器無法送出請求，請確認 Gemini API Key 格式與網路連線。"
+      : error.message;
+    renderPlainText(googleAiResult, `Google AI 分析失敗：${message}`);
   } finally {
     googleAiBtn.disabled = false;
   }
