@@ -100,6 +100,7 @@ h2 {
 .chart-section,
 .ai-note,
 .position-section,
+.saved-analysis-section,
 .watchlist-section {
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -387,7 +388,8 @@ h2 {
 }
 
 .gemini-key-row button,
-.google-ai-button {
+.google-ai-button,
+.save-analysis-button {
   min-height: 40px;
   padding: 0 12px;
   border: 0;
@@ -403,16 +405,32 @@ h2 {
   border: 1px solid var(--line);
 }
 
-.google-ai-button {
-  width: 100%;
+.google-ai-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
   margin-top: 8px;
+}
+
+.google-ai-button {
   background: var(--cyan);
   color: var(--ink);
+}
+
+.save-analysis-button {
+  border: 1px solid var(--green);
+  background: rgba(62, 207, 142, 0.12);
+  color: var(--green);
 }
 
 .google-ai-button:disabled {
   cursor: wait;
   opacity: 0.72;
+}
+
+.save-analysis-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .google-ai-result {
@@ -571,7 +589,8 @@ canvas {
 }
 
 .scanner-list,
-.watchlist {
+.watchlist,
+.saved-analysis-list {
   display: grid;
   gap: 8px;
 }
@@ -619,6 +638,65 @@ canvas {
   padding: 14px;
 }
 
+.saved-analysis-section {
+  margin-top: 14px;
+  padding: 14px;
+}
+
+.saved-analysis-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.saved-analysis-item strong,
+.saved-analysis-item span,
+.saved-analysis-item small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.saved-analysis-item strong {
+  font-size: 15px;
+}
+
+.saved-analysis-item span {
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.saved-analysis-item small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.saved-analysis-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.saved-analysis-actions button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.saved-analysis-actions button[data-action="delete"] {
+  color: var(--red);
+}
+
 .empty {
   color: var(--muted);
   font-size: 14px;
@@ -640,7 +718,9 @@ canvas {
   .signal-grid,
   .plan-grid,
   .position-form,
-  .gemini-key-row {
+  .gemini-key-row,
+  .google-ai-actions,
+  .saved-analysis-item {
     grid-template-columns: 1fr;
   }
 
@@ -651,5 +731,9 @@ canvas {
 
   .input-row {
     grid-template-columns: 1fr;
+  }
+
+  .saved-analysis-actions {
+    justify-content: flex-end;
   }
 }

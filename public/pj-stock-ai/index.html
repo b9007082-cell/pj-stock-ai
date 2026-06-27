@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="PJ Stock AI">
   <title>PJ Stock AI</title>
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=9">
+  <link rel="stylesheet" href="./styles.css?v=10">
 </head>
 <body>
   <div class="app-shell">
@@ -94,11 +94,22 @@
             <button id="saveGeminiKeyBtn" type="button">儲存</button>
             <button id="clearGeminiKeyBtn" type="button">清除</button>
           </div>
-          <button class="google-ai-button" id="googleAiBtn" type="button">用 Google AI 分析</button>
+          <div class="google-ai-actions">
+            <button class="google-ai-button" id="googleAiBtn" type="button">用 Google AI 分析</button>
+            <button class="save-analysis-button" id="saveAnalysisBtn" type="button" disabled>儲存分析</button>
+          </div>
           <div class="google-ai-result" id="googleAiResult">
             <p>Google AI 會讀取目前股票、買進日期、買進價、技術分數與關鍵價位，再產生偏短線的策略提醒。</p>
           </div>
         </div>
+      </section>
+
+      <section class="saved-analysis-section" aria-label="已儲存分析">
+        <div class="section-head">
+          <h2>已儲存分析</h2>
+          <span id="savedAnalysisCount">0 / 20</span>
+        </div>
+        <div class="saved-analysis-list" id="savedAnalysisList"></div>
       </section>
 
       <section class="tabs" aria-label="分析分頁">
@@ -154,6 +165,6 @@
     </main>
   </div>
 
-  <script src="./app.js?v=gh16" defer></script>
+  <script src="./app.js?v=gh17" defer></script>
 </body>
 </html>

@@ -11,9 +11,13 @@ const stockNames = {
 const scannerSymbols = ["6173", "3530", "2327", "3236", "2375", "6104", "4973"];
 const storageKey = "pj-stock-ai-watchlist";
 const geminiKeyStorageKey = "pj-stock-ai-gemini-key";
+const savedAnalysesStorageKey = "pj-stock-ai-saved-analyses-v1";
+const maxSavedAnalyses = 20;
 const dataVersion = "8111-history-1";
 
 let currentAnalysis = null;
+let currentGoogleAiText = "";
+let currentGoogleAiContext = null;
 let deferredInstallPrompt = null;
 
 const form = document.querySelector("#stockForm");
@@ -36,6 +40,9 @@ const clearGeminiKeyBtn = document.querySelector("#clearGeminiKeyBtn");
 const googleAiBtn = document.querySelector("#googleAiBtn");
 const googleAiStatus = document.querySelector("#googleAiStatus");
 const googleAiResult = document.querySelector("#googleAiResult");
+const saveAnalysisBtn = document.querySelector("#saveAnalysisBtn");
+const savedAnalysisList = document.querySelector("#savedAnalysisList");
+const savedAnalysisCount = document.querySelector("#savedAnalysisCount");
 const canvas = document.querySelector("#priceChart");
 const ctx = canvas.getContext("2d");
 
@@ -127,6 +134,18 @@ function renderPlainText(container, text) {
     .split(/\n{2,}/)
     .map((block) => `<p>${block.replace(/\n/g, "<br>")}</p>`)
     .join("");
+}
+
+function formatSavedTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "時間不明";
+  return date.toLocaleString("zh-TW", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
 function getNextTradingDate(dateText) {
@@ -677,6 +696,30 @@ function updateGoogleAiStatus(message) {
   googleAiStatus.textContent = message || (!key ? "未啟用" : isValidGeminiKey(key) ? "已啟用" : "Key 格式錯誤");
 }
 
+function updateSaveAnalysisButton() {
+  if (!saveAnalysisBtn) return;
+  const buyPrice = Number(buyPriceInput.value);
+  const contextMatches = Boolean(
+    currentAnalysis
+    && currentGoogleAiText
+    && currentGoogleAiContext
+    && currentGoogleAiContext.symbol === currentAnalysis.symbol
+    && currentGoogleAiContext.buyDate === buyDateInput.value
+    && currentGoogleAiContext.buyPrice === buyPrice
+  );
+  saveAnalysisBtn.disabled = !contextMatches;
+}
+
+function resetGoogleAiResult() {
+  currentGoogleAiText = "";
+  currentGoogleAiContext = null;
+  updateSaveAnalysisButton();
+  renderPlainText(
+    googleAiResult,
+    "Google AI 會讀取目前股票、買進日期、買進價、技術分數與關鍵價位，再產生偏短線的策略提醒。"
+  );
+}
+
 function saveGeminiKey() {
   const key = (geminiKeyInput.value || "").trim();
   if (!key) {
@@ -690,6 +733,9 @@ function saveGeminiKey() {
     return;
   }
   localStorage.setItem(geminiKeyStorageKey, key);
+  currentGoogleAiText = "";
+  currentGoogleAiContext = null;
+  updateSaveAnalysisButton();
   updateGoogleAiStatus("已儲存");
   renderPlainText(googleAiResult, "Gemini API Key 已儲存在這台瀏覽器。GitHub 不會看到你的 Key。");
 }
@@ -697,6 +743,9 @@ function saveGeminiKey() {
 function clearGeminiKey() {
   localStorage.removeItem(geminiKeyStorageKey);
   geminiKeyInput.value = "";
+  currentGoogleAiText = "";
+  currentGoogleAiContext = null;
+  updateSaveAnalysisButton();
   updateGoogleAiStatus("已清除");
   renderPlainText(googleAiResult, "已清除這台瀏覽器中的 Gemini API Key。");
 }
@@ -864,6 +913,9 @@ async function generateGoogleAiStrategy() {
   }
 
   googleAiBtn.disabled = true;
+  currentGoogleAiText = "";
+  currentGoogleAiContext = null;
+  updateSaveAnalysisButton();
   updateGoogleAiStatus("分析中");
   renderPlainText(googleAiResult, "Google AI 正在整理策略...");
 
@@ -881,8 +933,15 @@ async function generateGoogleAiStrategy() {
     const text = result.finishReason === "MAX_TOKENS"
       ? `${result.text}\n\n提醒：Google AI 仍回覆過長，我已改用短版格式但它仍被截斷。`
       : result.text;
+    currentGoogleAiText = text;
+    currentGoogleAiContext = {
+      symbol: currentAnalysis.symbol,
+      buyDate,
+      buyPrice
+    };
     updateGoogleAiStatus("完成");
     renderPlainText(googleAiResult, text);
+    updateSaveAnalysisButton();
   } catch (error) {
     updateGoogleAiStatus("失敗");
     const message = error instanceof TypeError
@@ -896,6 +955,7 @@ async function generateGoogleAiStrategy() {
 
 async function loadAndRender(symbol) {
   const cleanSymbol = String(symbol).replace(/\D/g, "").slice(0, 6) || "2327";
+  resetGoogleAiResult();
   renderLoading(cleanSymbol);
   try {
     const quote = await fetchQuote(cleanSymbol);
@@ -931,6 +991,112 @@ async function renderScanner() {
       <span class="scanner-score">${item.score}</span>
     </button>
   `).join("");
+}
+
+function getSavedAnalyses() {
+  try {
+    const items = JSON.parse(localStorage.getItem(savedAnalysesStorageKey));
+    return Array.isArray(items) ? items : [];
+  } catch {
+    return [];
+  }
+}
+
+function setSavedAnalyses(items) {
+  localStorage.setItem(savedAnalysesStorageKey, JSON.stringify(items.slice(0, maxSavedAnalyses)));
+  renderSavedAnalyses();
+}
+
+function renderSavedAnalyses() {
+  if (!savedAnalysisList || !savedAnalysisCount) return;
+  const items = getSavedAnalyses()
+    .filter((item) => item?.symbol && item?.analysis)
+    .sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)))
+    .slice(0, maxSavedAnalyses);
+
+  savedAnalysisCount.textContent = `${items.length} / ${maxSavedAnalyses}`;
+  if (!items.length) {
+    savedAnalysisList.innerHTML = `<p class="empty">尚未儲存分析</p>`;
+    return;
+  }
+
+  savedAnalysisList.innerHTML = items.map((item) => `
+    <article class="saved-analysis-item" data-symbol="${escapeHTML(item.symbol)}">
+      <div>
+        <strong>${escapeHTML(item.name || item.analysis.name)} ${escapeHTML(item.symbol)}</strong>
+        <span>買進價 ${formatPrice(Number(item.buyPrice))}</span>
+        <small>儲存於 ${escapeHTML(formatSavedTime(item.savedAt))}</small>
+      </div>
+      <div class="saved-analysis-actions">
+        <button type="button" data-action="load" title="查看已儲存分析">查看</button>
+        <button type="button" data-action="delete" title="刪除此分析">刪除</button>
+      </div>
+    </article>
+  `).join("");
+}
+
+function saveCurrentAnalysis() {
+  updateSaveAnalysisButton();
+  if (saveAnalysisBtn.disabled || !currentGoogleAiContext) {
+    updateGoogleAiStatus("無法儲存");
+    renderPlainText(googleAiResult, "請先完成目前股票與持股資料的 Google AI 分析，再儲存結果。");
+    return;
+  }
+
+  const savedAt = new Date().toISOString();
+  const snapshot = {
+    version: 1,
+    symbol: currentAnalysis.symbol,
+    name: currentAnalysis.name,
+    savedAt,
+    buyDate: currentGoogleAiContext.buyDate,
+    buyPrice: currentGoogleAiContext.buyPrice,
+    googleAiText: currentGoogleAiText,
+    analysis: currentAnalysis
+  };
+  const items = getSavedAnalyses().filter((item) => item.symbol !== snapshot.symbol);
+
+  try {
+    setSavedAnalyses([snapshot, ...items]);
+    updateGoogleAiStatus("分析已儲存");
+    saveAnalysisBtn.textContent = "已儲存";
+    window.setTimeout(() => {
+      saveAnalysisBtn.textContent = "儲存分析";
+    }, 1400);
+  } catch {
+    updateGoogleAiStatus("儲存失敗");
+    renderPlainText(googleAiResult, "瀏覽器儲存空間不足，請刪除部分已儲存分析後再試。");
+  }
+}
+
+function restoreSavedAnalysis(symbol) {
+  const snapshot = getSavedAnalyses().find((item) => item.symbol === symbol);
+  if (!snapshot?.analysis) return;
+
+  buyDateInput.value = snapshot.buyDate || "";
+  buyPriceInput.value = Number.isFinite(Number(snapshot.buyPrice)) ? snapshot.buyPrice : "";
+  renderAnalysis(snapshot.analysis);
+  currentGoogleAiText = snapshot.googleAiText || "";
+  currentGoogleAiContext = {
+    symbol: snapshot.symbol,
+    buyDate: snapshot.buyDate || "",
+    buyPrice: Number(snapshot.buyPrice)
+  };
+  renderPlainText(googleAiResult, currentGoogleAiText || "此快照沒有 Google AI 回覆內容。");
+  document.querySelector("#chartMeta").textContent =
+    `已儲存 ${formatSavedTime(snapshot.savedAt)} · 原行情 ${snapshot.analysis.dataLabel}`;
+  updatePositionStrategy();
+  updateGoogleAiStatus("已載入儲存結果");
+  updateSaveAnalysisButton();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function deleteSavedAnalysis(symbol) {
+  const snapshot = getSavedAnalyses().find((item) => item.symbol === symbol);
+  if (!snapshot) return;
+  const confirmed = window.confirm(`確定刪除 ${snapshot.name || symbol} ${symbol} 的已儲存分析？`);
+  if (!confirmed) return;
+  setSavedAnalyses(getSavedAnalyses().filter((item) => item.symbol !== symbol));
 }
 
 function getWatchlist() {
@@ -986,8 +1152,14 @@ positionForm.addEventListener("submit", (event) => {
   updatePositionStrategy();
 });
 
-buyDateInput.addEventListener("change", updatePositionStrategy);
-buyPriceInput.addEventListener("input", updatePositionStrategy);
+buyDateInput.addEventListener("change", () => {
+  updatePositionStrategy();
+  updateSaveAnalysisButton();
+});
+buyPriceInput.addEventListener("input", () => {
+  updatePositionStrategy();
+  updateSaveAnalysisButton();
+});
 
 if (geminiKeyInput) {
   geminiKeyInput.value = localStorage.getItem(geminiKeyStorageKey) || "";
@@ -997,6 +1169,15 @@ if (geminiKeyInput) {
 saveGeminiKeyBtn?.addEventListener("click", saveGeminiKey);
 clearGeminiKeyBtn?.addEventListener("click", clearGeminiKey);
 googleAiBtn?.addEventListener("click", generateGoogleAiStrategy);
+saveAnalysisBtn?.addEventListener("click", saveCurrentAnalysis);
+
+savedAnalysisList?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-action]");
+  const item = button?.closest("[data-symbol]");
+  if (!button || !item) return;
+  if (button.dataset.action === "load") restoreSavedAnalysis(item.dataset.symbol);
+  if (button.dataset.action === "delete") deleteSavedAnalysis(item.dataset.symbol);
+});
 
 quickList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-symbol]");
@@ -1058,5 +1239,6 @@ if ("serviceWorker" in navigator) {
 
 renderScanner();
 renderWatchlist();
+renderSavedAnalyses();
 updateGoogleAiStatus();
 loadAndRender(input.value);
